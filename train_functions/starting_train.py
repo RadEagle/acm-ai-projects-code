@@ -28,7 +28,7 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval):
     )
 
     # Initalize optimizer (for gradient descent) and loss function
-    optimizer = optim.Adam(model.parameters())
+    optimizer = optim.Adam(model.parameters(), lr = 0.1)
     loss_fn = nn.CrossEntropyLoss()
 
     step = 0
@@ -38,7 +38,19 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval):
         # Loop over each batch in the dataset
         for batch in tqdm(train_loader):
             # TODO: Backpropagation and gradient descent
+            model.train()
+            images, labels = batch
+            images = images.to(device)
+            labels = labels.to(device)
+            outputs = model(images)
 
+            loss = loss_fn(outputs, labels)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            total_less += loss.item()
+            step += 1
             # Periodically evaluate our model + log to Tensorboard
             if step % n_eval == 0:
                 # TODO:
