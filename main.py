@@ -17,8 +17,11 @@ def main():
     print("Batch size:", constants.BATCH_SIZE)
 
     # Initalize dataset and model. Then train the model!
-    train_dataset = StartingDataset()
-    val_dataset = StartingDataset()
+    csv_path = 'humpback-whale-identification/train.csv'
+    folder_path = 'humpback-whale-identification/train'
+    img_size = (128, 128)
+    train_dataset = StartingDataset(csv_path, folder_path, img_size)
+    val_dataset = StartingDataset(csv_path, folder_path, img_size)
     model = StartingNetwork()
     starting_train(
         train_dataset=train_dataset,
