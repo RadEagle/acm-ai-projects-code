@@ -28,10 +28,14 @@ class StartingDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         #inputs = torch.zeros([3, 224, 224])
         inputs = 0
-        with Image.open(self.img_ids[index]) as image:
+        with Image.open(self.img_ids[index]).convert('RGB') as image:
             inputs = transforms.functional.resize(image, self.img_size)
 
         inputs = transforms.ToTensor()(inputs)
+
+        # print(self.img_ids[index])
+        # print(inputs.size(dim=0))
+        
         inputs = self.transform(inputs)
         
         return inputs, self.labels[index]

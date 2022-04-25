@@ -7,7 +7,7 @@ from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 
 
-def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval):
+def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, device):
     """
     Trains and evaluates a model.
 
@@ -38,6 +38,7 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval):
     writer = SummaryWriter()
     for epoch in range(epochs):
         print(f"Epoch {epoch + 1} of {epochs}")
+        print("working")
 
         # Loop over each batch in the dataset
         for batch in tqdm(train_loader):
@@ -45,7 +46,8 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval):
             model.train()
             images, labels = batch
             images = images.to(device)
-            labels = labels.to(device)
+            print(labels)
+            labels = torch.tensor(labels).to(device)
             outputs = model(images)
 
             loss = loss_fn(outputs, labels)
@@ -69,7 +71,7 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval):
                 # Compute validation loss and accuracy.
                 # Log the results to Tensorboard.
                 # Don't forget to turn off gradient calculations!
-                evaluate(val_loader, model, loss_fn)
+                evaluate(val_loader, model, loss_fn, device, writer)
 
             step += 1
 
@@ -93,10 +95,26 @@ def compute_accuracy(outputs, labels):
     return n_correct / n_total
 
 
-def evaluate(val_loader, model, loss_fn):
+def evaluate(val_loader, model, loss_fn, device, writer):
     """
     Computes the loss and accuracy of a model on the validation dataset.
 
     TODO!
     """
-    pass
+    # INITIAL CODE, MAY NOT BE FINAL
+    print(len(val_loader))
+    with torch.no_grad():
+        for batch in tqdm(val_loader, position=0, leave=False):
+
+            images, labels = batch
+            images = images.to(device)
+            labels = labels.to(device)
+            outputs = model(images)
+            loss = loss_fn(outputs, labels)
+            outputs = torch.argmax(outputs, dim=1)
+            outputs = torch.tensor(outputs, dtype=torch.float)
+            labels = torch.tensor(labels, dtype=torch.float)
+            accuracy = compute_accuracy(outputs, labels)
+
+            writer.add_scalar("Eval Accuracy", accuracy)
+            writer.add_scalar("Eval Loss", loss)
