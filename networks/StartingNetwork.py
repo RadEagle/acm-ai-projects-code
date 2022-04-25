@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 
-
 class StartingNetwork(torch.nn.Module):
     """
     Basic logistic regression on 224x224x3 images.
@@ -16,7 +15,7 @@ class StartingNetwork(torch.nn.Module):
         # also try resnet101, resnet151
         model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True)
         self.newmodel = torch.nn.Sequential(*(list(model.children())[:-1]))
-        self.resnetfc = nn.Linear(2048, 5)
+        self.resnetfc = nn.Linear(512, 32)
 
     def forward(self, x):
         # x = self.flatten(x)

@@ -7,6 +7,21 @@ from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 
 
+def create_label_dict(labels):
+    # count = len(book) + 1
+    book = {}
+    count = 0
+    for label in labels:
+        if label not in book:
+            book[label] = count
+            count += 1
+    return book
+
+
+def key_to_value(labels, book):
+    return tuple(book[label] for label in labels)
+
+
 def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, device):
     """
     Trains and evaluates a model.
@@ -26,6 +41,13 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, d
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True
     )
+
+    # create a label string to int dictionary
+    label_dict = {}
+    # print(train_loader)
+    # _, all_labels = train_loader
+    # dict_labels = create_label_dict(all_labels)
+
     val_loader = torch.utils.data.DataLoader(
         val_dataset, batch_size=batch_size, shuffle=True
     )
@@ -46,7 +68,11 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, d
             model.train()
             images, labels = batch
             images = images.to(device)
-            print(labels)
+            
+            # TODO: convert labels from string to int
+            label_dict = create_label_dict(labels)
+            labels = key_to_value(labels, label_dict)
+
             labels = torch.tensor(labels).to(device)
             outputs = model(images)
 
@@ -55,7 +81,7 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, d
             loss.backward()
             optimizer.step()
 
-            total_less += loss.item()
+            # total_less += loss.item()
             step += 1
             # Periodically evaluate our model + log to Tensorboard
             if step % n_eval == 0:
@@ -67,9 +93,6 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, d
                 writer.add_scalar("Accuracy", accuracy)
                 writer.add_scalar("Loss", loss)
 
-                # TODO:
-                # Compute validation loss and accuracy.
-                # Log the results to Tensorboard.
                 # Don't forget to turn off gradient calculations!
                 evaluate(val_loader, model, loss_fn, device, writer)
 
