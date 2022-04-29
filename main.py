@@ -17,6 +17,7 @@ def main():
 
     print("Epochs:", constants.EPOCHS)
     print("Batch size:", constants.BATCH_SIZE)
+    print("Device used:", device)
 
     # Initalize dataset and model. Then train the model!
     csv_path = 'humpback-whale-identification/train.csv'

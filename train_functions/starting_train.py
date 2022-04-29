@@ -8,7 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 def create_label_dict(labels):
-    # count = len(book) + 1
+    # count = len(book) + 1o
     book = {}
     count = 0
     for label in labels:
@@ -83,20 +83,24 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, d
 
             # total_less += loss.item()
             step += 1
+            # print(f"Step: {step}\nMod: {step % n_eval}")
             # Periodically evaluate our model + log to Tensorboard
             if step % n_eval == 0:
                 # TODO:
                 # Compute training loss and accuracy.
                 accuracy = compute_accuracy(outputs, labels)
 
+                print(f"accuracy: {accuracy}")
+                print(f"loss: {loss}")
+
                 # Log the results to Tensorboard.
                 writer.add_scalar("Accuracy", accuracy)
                 writer.add_scalar("Loss", loss)
 
                 # Don't forget to turn off gradient calculations!
-                evaluate(val_loader, model, loss_fn, device, writer)
 
-            step += 1
+            if step % (n_eval * 1) == 0:
+                evaluate(val_loader, model, loss_fn, device, writer)
 
         print()
 
@@ -131,7 +135,9 @@ def evaluate(val_loader, model, loss_fn, device, writer):
 
             images, labels = batch
             images = images.to(device)
-            labels = labels.to(device)
+            label_dict = create_label_dict(labels)
+            labels = key_to_value(labels, label_dict)
+            labels = torch.tensor(labels).to(device)
             outputs = model(images)
             loss = loss_fn(outputs, labels)
             outputs = torch.argmax(outputs, dim=1)
