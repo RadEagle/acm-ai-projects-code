@@ -90,16 +90,17 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, d
                 # Compute training loss and accuracy.
                 accuracy = compute_accuracy(outputs, labels)
 
-                print(f"accuracy: {accuracy}")
-                print(f"loss: {loss}")
+                # DEBUG: Log accuracy and loss directly to the terminal
+                # print(f"accuracy: {accuracy}")
+                # print(f"loss: {loss}")
 
                 # Log the results to Tensorboard.
-                writer.add_scalar("Accuracy", accuracy)
-                writer.add_scalar("Loss", loss)
+                writer.add_scalar("Accuracy", accuracy, step)
+                writer.add_scalar("Loss", loss, step)
 
                 # Don't forget to turn off gradient calculations!
 
-            if step % (n_eval * 1) == 0:
+            if step % (n_eval * 10) == 0:
                 evaluate(val_loader, model, loss_fn, device, writer)
 
         print()
@@ -130,9 +131,10 @@ def evaluate(val_loader, model, loss_fn, device, writer):
     """
     # INITIAL CODE, MAY NOT BE FINAL
     print(len(val_loader))
+    step_ = 0
     with torch.no_grad():
         for batch in tqdm(val_loader, position=0, leave=False):
-
+            step_ += 1
             images, labels = batch
             images = images.to(device)
             label_dict = create_label_dict(labels)
@@ -145,5 +147,5 @@ def evaluate(val_loader, model, loss_fn, device, writer):
             labels = torch.tensor(labels, dtype=torch.float)
             accuracy = compute_accuracy(outputs, labels)
 
-            writer.add_scalar("Eval Accuracy", accuracy)
-            writer.add_scalar("Eval Loss", loss)
+            writer.add_scalar("Eval Accuracy", accuracy, step_)
+            writer.add_scalar("Eval Loss", loss, step_)
