@@ -34,6 +34,9 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, d
         n_eval:          Interval at which we evaluate our model.
     """
 
+    # set data points before evaluating
+    data_points_before_test = 10
+
     # Get keyword arguments
     batch_size, epochs = hyperparameters["batch_size"], hyperparameters["epochs"]
 
@@ -100,7 +103,7 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, d
 
                 # Don't forget to turn off gradient calculations!
 
-            if step % (n_eval * 10) == 0:
+            if step % (n_eval * data_points_before_test) == 0:
                 evaluate(val_loader, model, loss_fn, device, writer)
 
         print()

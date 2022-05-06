@@ -12,7 +12,8 @@ class StartingNetwork(torch.nn.Module):
         # self.fc = nn.Linear(224 * 224 * 3, 1)
         # self.sigmoid = nn.Sigmoid()
 
-        # also try resnet101, resnet151
+        # also try resnet151
+        # resnet101 uses 2048, resnet18 uses 512
         model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True)
         self.newmodel = torch.nn.Sequential(*(list(model.children())[:-1]))
         self.resnetfc = nn.Linear(512, 32)
