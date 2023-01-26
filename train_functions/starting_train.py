@@ -2,15 +2,16 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
+from pytorch_metric_learning import losses, miners
 
 # extra imports
 from torch.utils.tensorboard import SummaryWriter
 
 
-def create_label_dict(labels):
+def create_label_dict(labels, label_dict):
     # count = len(book) + 1o
-    book = {}
-    count = 0
+    book = label_dict
+    count = len(book)
     for label in labels:
         if label not in book:
             book[label] = count
@@ -47,17 +48,19 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, d
 
     # create a label string to int dictionary
     label_dict = {}
-    # print(train_loader)
-    # _, all_labels = train_loader
-    # dict_labels = create_label_dict(all_labels)
 
     val_loader = torch.utils.data.DataLoader(
         val_dataset, batch_size=batch_size, shuffle=True
     )
 
     # Initalize optimizer (for gradient descent) and loss function
-    optimizer = optim.Adam(model.parameters(), lr = 0.1)
-    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr = 0.05)
+    # loss_fn = nn.CrossEntropyLoss()
+
+    margin = 1
+
+    loss_fn = losses.TripletMarginLoss(margin=margin)
+    miner = miners.BatchEasyHardMiner(pos_strategy='all', neg_strategy='hard')
 
     step = 0
     writer = SummaryWriter()
@@ -73,25 +76,30 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, d
             images = images.to(device)
             
             # TODO: convert labels from string to int
-            label_dict = create_label_dict(labels)
+            label_dict = create_label_dict(labels, label_dict)
             labels = key_to_value(labels, label_dict)
 
             labels = torch.tensor(labels).to(device)
             outputs = model(images)
-
             loss = loss_fn(outputs, labels)
+
+            embeddings = model(images) # images is a batch of images
+            print(f"labels: {labels}\nembeddings: {embeddings}")
+            hard_triplets = miner(embeddings, labels)
+            loss = loss_fn(embeddings, labels, hard_triplets)
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
             # total_less += loss.item()
             step += 1
-            # print(f"Step: {step}\nMod: {step % n_eval}")
+
             # Periodically evaluate our model + log to Tensorboard
             if step % n_eval == 0:
                 # TODO:
                 # Compute training loss and accuracy.
-                accuracy = compute_accuracy(outputs, labels)
+                accuracy = compute_accuracy(embeddings, labels)
 
                 # DEBUG: Log accuracy and loss directly to the terminal
                 # print(f"accuracy: {accuracy}")
@@ -104,7 +112,8 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, d
                 # Don't forget to turn off gradient calculations!
 
             if step % (n_eval * data_points_before_test) == 0:
-                evaluate(val_loader, model, loss_fn, device, writer)
+                eval_step = step / (n_eval * data_points_before_test)
+                evaluate(val_loader, model, loss_fn, miner, device, writer, label_dict, eval_step)
 
         print()
 
@@ -126,7 +135,7 @@ def compute_accuracy(outputs, labels):
     return n_correct / n_total
 
 
-def evaluate(val_loader, model, loss_fn, device, writer):
+def evaluate(val_loader, model, loss_fn, miner, device, writer, label_dict, step):
     """
     Computes the loss and accuracy of a model on the validation dataset.
 
@@ -134,17 +143,18 @@ def evaluate(val_loader, model, loss_fn, device, writer):
     """
     # INITIAL CODE, MAY NOT BE FINAL
     print(len(val_loader))
-    step_ = 0
+    step_ = 119 * (step - 1)
     with torch.no_grad():
         for batch in tqdm(val_loader, position=0, leave=False):
             step_ += 1
             images, labels = batch
             images = images.to(device)
-            label_dict = create_label_dict(labels)
+            label_dict = create_label_dict(labels, label_dict)
             labels = key_to_value(labels, label_dict)
             labels = torch.tensor(labels).to(device)
             outputs = model(images)
-            loss = loss_fn(outputs, labels)
+            hard_triplets = miner(outputs, labels)
+            loss = loss_fn(outputs, labels, hard_triplets)
             outputs = torch.argmax(outputs, dim=1)
             outputs = torch.tensor(outputs, dtype=torch.float)
             labels = torch.tensor(labels, dtype=torch.float)
